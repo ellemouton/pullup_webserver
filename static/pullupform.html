@@ -1,0 +1,44 @@
+<html>
+    <head>
+    <title>Pull-Up Your Socks</title>
+    </head>
+    <body>
+        <h1>Pull-Up Your Socks!</h1>
+        <form action="/pullups" method="post">
+            <fieldset>
+                <label>Username:</label><br>
+                <input type="text" name="username"><br>
+                <label>Password:</label><br>
+                <input type="password" name="password"><br>
+                <label>Date:</label><br>
+                <input type="date" id="date" name="date"><br>
+                <label>Number of pull-ups:</label><br>
+                <input type="number" name="number"><br><br>
+                <input class="btn" type="submit" value="Submit!">
+            </fieldset>
+        </form>
+
+        <h4>Switch Page:</h4>
+        <a class="btn" href="/view">View User Stats</a>
+    </body>
+    <style>
+        h1 {
+          color: #08746f;
+        }
+        .btn {
+            margin: 5px;
+            border: 1ps;
+            padding: 10px;
+            background-color: #08746f;
+            color:white;
+            overflow-wrap: break-word;
+            font-size: 14px;
+            font-family: "Lucida Console";
+            border-radius: 3px;
+            text-decoration: none;
+        }
+    </style>
+    <script>
+        document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+    </script>
+</html>

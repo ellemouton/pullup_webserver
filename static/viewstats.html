@@ -1,0 +1,125 @@
+<html>
+    <head>
+    <title>Pull-Up Your Socks</title>
+    </head>
+    <body>
+        <h1>Pull-Up Your Socks!</h1>
+        <form action="/view" method="post">
+            <fieldset>
+                <label>Date:</label><br>
+                <input type="date" id="date" name="date"><br>
+                <input type="submit" value="Enter">
+            </fieldset>
+        </form>
+
+        <h4> Total for {{.Day}}:</h4>
+        <fieldset>
+            {{range .DailyTotals}}
+                <li>{{.Username}}: {{.Pullups}}</li>
+            {{end}}
+        </fieldset>
+
+        <h4>Running Totals:</h4>
+        <fieldset>
+            {{range .Totals}}
+                <li>{{.Username}}: {{.Pullups}}</li>
+            {{end}}
+        </fieldset>
+
+        <h4>Switch Page:</h4>
+        <a class="btn" href="/pullups">Log a Sesh!</a>
+       
+        <h4>Graphs:</h4>
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        <div id="dailyTotals"></div> 
+        <div id="cumulative"></div> 
+    </body>
+    <style>
+        h1 {
+          color: #08746f;
+        }
+        .btn {
+            margin: 5px;
+            border: 1ps;
+            padding: 10px;
+            background-color: #08746f;
+            color:white;
+            overflow-wrap: break-word;
+            font-size: 14px;
+            font-family: "Lucida Console";
+            border-radius: 3px;
+            text-decoration: none;
+        }
+    </style>
+    <script>
+        document.getElementById('date').value = new Date().toISOString().substring(0, 10);
+
+        google.charts.load('current', {packages: ['corechart', 'line']});
+        google.charts.setOnLoadCallback(graphDaily);
+
+        google.charts.load('current', {packages: ['corechart', 'line']});
+        google.charts.setOnLoadCallback(graphCumulative);
+
+        function graphDaily() {
+            var data = new google.visualization.DataTable();
+
+            data.addColumn('string', 'X');
+            {{range .Totals}}
+                data.addColumn('number', '{{.Username}}');
+            {{end}}
+
+            {{range .Graph1Points}}
+            data.addRow(
+                [ "{{.Day}}",{{range .UserPoints}}{{.}},{{end}}]
+            ); 
+            {{end}}
+            console.log("test")
+
+            var options = {
+                title: 'Daily Totals',
+                hAxis: {
+                    title: 'Date'
+                },
+                vAxis: {
+                    title: 'Pull-ups'
+                },
+                width: 1000,
+                height: 300,
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('dailyTotals'));
+            chart.draw(data, options);
+        }
+
+        function graphCumulative() {
+            var data = new google.visualization.DataTable();
+
+            data.addColumn('string', 'X');
+            {{range .Totals}}
+                data.addColumn('number', '{{.Username}}');
+            {{end}}
+
+            {{range .Graph2Points}}
+            data.addRow(
+                [ "{{.Day}}",{{range .UserPoints}}{{.}},{{end}}]
+            ); 
+            {{end}}
+            console.log("test")
+
+            var options = {
+                title: 'Cumulative',
+                hAxis: {
+                    title: 'Date'
+                },
+                vAxis: {
+                    title: 'Pull-ups'
+                },
+                width: 1000,
+                height: 300,
+            };
+
+            var chart = new google.visualization.LineChart(document.getElementById('cumulative'));
+            chart.draw(data, options);
+        }
+    </script>
+</html>
