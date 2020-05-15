@@ -107,13 +107,19 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totals, err := getTotals(users)
+	totals, winnerAllTime, err := getTotals(users)
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
 		return
 	}
 
-	totalsPerDay, err := getTotalsPerDay(users, date)
+	totalsPerDay, winnerDay, err := getTotalsPerDay(users, date)
+	if err != nil {
+		fmt.Fprintf(w, err.Error())
+		return
+	}
+
+	weeklyTotals, winnerWeek, err := getWeeklyTotals(users)
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
 		return
@@ -125,7 +131,7 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	totalsCumulative, err := getTotalsCumulative(users, 7)
+	totalsCumulative, err := getCumulativeForNDays(users, 7)
 	if err != nil {
 		fmt.Fprintf(w, err.Error())
 		return
@@ -134,7 +140,11 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 	pageData := ViewPage{
 		Totals:       totals,
 		DailyTotals:  totalsPerDay,
+		WeeklyTotals: weeklyTotals,
 		Day:          date.Format("2006-01-02"),
+		WinnerDay:	users[winnerDay].username,
+		WinnerWeek: users[winnerWeek].username,
+		WinnerAllTime: users[winnerAllTime].username,
 		Graph1Points: graphData,
 		Graph2Points: totalsCumulative,
 	}
@@ -150,7 +160,7 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		totalsPerDay, err = getTotalsPerDay(users, date)
+		totalsPerDay, _, err = getTotalsPerDay(users, date)
 		if err != nil {
 			fmt.Fprintf(w, err.Error())
 			return
@@ -160,6 +170,9 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 			Totals:       totals,
 			DailyTotals:  totalsPerDay,
 			Day:          date.Format("2006-01-02"),
+			WinnerDay:	users[winnerDay].username,
+			WinnerWeek: users[winnerWeek].username,
+			WinnerAllTime: users[winnerAllTime].username,
 			Graph1Points: graphData,
 			Graph2Points: totalsCumulative,
 		}
@@ -194,6 +207,42 @@ func getAllUsers() ([]user, error) {
 	}
 
 	return users, nil
+}
+
+func getCumulativeForNDays(urs []user, n int) ([]DayData, error) {
+	var data []DayData
+
+	fromTime := time.Now().AddDate(0, 0, -1*n).Format("2006-01-02")
+	from, err := time.Parse("2006-01-02", fromTime)
+	if err != nil {
+		return nil, err
+	}
+
+	for i := n; i >= 0; i-- {
+
+		day := time.Now().AddDate(0, 0, -1*i).Format("2006-01-02")
+		date, err := time.Parse("2006-01-02", day)
+		if err != nil {
+			return nil, err
+		}
+
+		totals, err := getCumulativeFromTo(urs, from, date)
+		if err != nil {
+			return nil, err
+		}
+
+		var up []int
+		for _, t := range totals {
+			up = append(up, t.Pullups)
+		}
+
+		data = append(data, DayData{
+			Day:        day,
+			UserPoints: up,
+		})
+	}
+
+	return data, nil
 }
 
 func getTotalsCumulative(urs []user, n int) ([]DayData, error) {
@@ -237,7 +286,7 @@ func getDailyTotals(urs []user, n int) ([]DayData, error) {
 			return nil, err
 		}
 
-		totals, err := getTotalsPerDay(urs, date)
+		totals, _, err := getTotalsPerDay(urs, date)
 		if err != nil {
 			return nil, err
 		}
@@ -255,13 +304,15 @@ func getDailyTotals(urs []user, n int) ([]DayData, error) {
 	return data, nil
 }
 
-func getTotals(ur []user) ([]Total, error) {
+func getTotals(ur []user) ([]Total, int, error) {
 	var totals []Total
+	winner := -1
+	max := 0
 
-	for _, u := range ur {
+	for i, u := range ur {
 		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where user_id = ? `, u.id)
 		if err != nil {
-			return nil, err
+			return nil, -1, err
 		}
 		defer row.Close()
 
@@ -269,22 +320,36 @@ func getTotals(ur []user) ([]Total, error) {
 		if row.Next() {
 			err = row.Scan(&totPullups)
 			if err != nil {
-				return nil, err
+				return nil, -1, err
 			}
+		}
+
+		if totPullups > max {
+			max = totPullups
+			winner = i
 		}
 
 		totals = append(totals, Total{Username: u.username, Pullups: totPullups})
 	}
-	return totals, nil
+	return totals, winner, nil
 }
 
-func getTotalsPerDay(ur []user, d time.Time) ([]Total, error) {
+func getWeeklyTotals(ur []user) ([]Total, int, error) {
 	var totals []Total
+	winner := -1
+	max := 0
 
-	for _, u := range ur {
-		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where (user_id = ? && day = ?)`, u.id, d)
+	fromTime := time.Now().AddDate(0, 0, -7).Format("2006-01-02")
+	from, err := time.Parse("2006-01-02", fromTime)
+	if err != nil {
+		return nil, -1, err
+	}
+
+
+	for i, u := range ur {
+		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where  (user_id = ? && day <= ?) `, u.id, from)
 		if err != nil {
-			return nil, err
+			return nil, -1,  err
 		}
 		defer row.Close()
 
@@ -292,13 +357,48 @@ func getTotalsPerDay(ur []user, d time.Time) ([]Total, error) {
 		if row.Next() {
 			err = row.Scan(&totPullups)
 			if err != nil {
-				return nil, err
+				return nil, -1, err
 			}
+		}
+
+		if totPullups > max {
+			max = totPullups
+			winner = i
 		}
 
 		totals = append(totals, Total{Username: u.username, Pullups: totPullups})
 	}
-	return totals, nil
+	return totals, winner, nil
+}
+
+func getTotalsPerDay(ur []user, d time.Time) ([]Total, int, error) {
+	var totals []Total
+	winner := -1
+	max := 0
+
+	for i, u := range ur {
+		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where (user_id = ? && day = ?)`, u.id, d)
+		if err != nil {
+			return nil, -1, err
+		}
+		defer row.Close()
+
+		var totPullups int
+		if row.Next() {
+			err = row.Scan(&totPullups)
+			if err != nil {
+				return nil, -1, err
+			}
+		}
+
+		if totPullups > max {
+			max = totPullups
+			winner = i
+		}
+
+		totals = append(totals, Total{Username: u.username, Pullups: totPullups})
+	}
+	return totals, winner, nil
 }
 
 func getTotalsCumulativePerDay(ur []user, d time.Time) ([]Total, error) {
@@ -306,6 +406,29 @@ func getTotalsCumulativePerDay(ur []user, d time.Time) ([]Total, error) {
 
 	for _, u := range ur {
 		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where (user_id = ? && day <= ?)`, u.id, d)
+		if err != nil {
+			return nil, err
+		}
+		defer row.Close()
+
+		var totPullups int
+		if row.Next() {
+			err = row.Scan(&totPullups)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		totals = append(totals, Total{Username: u.username, Pullups: totPullups})
+	}
+	return totals, nil
+}
+
+func getCumulativeFromTo(ur []user, from, to time.Time) ([]Total, error) {
+	var totals []Total
+
+	for _, u := range ur {
+		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where (user_id = ? && day >= ? && day <= ?)`, u.id, from, to)
 		if err != nil {
 			return nil, err
 		}

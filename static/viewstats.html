@@ -3,7 +3,7 @@
     <title>Pull-Up Your Socks</title>
     </head>
     <body>
-        <h1>Pull-Up Your Socks!</h1>
+        <h1>Pull-Up Your Socks! 💪🧦</h1>
         <form action="/view" method="post">
             <fieldset>
                 <label>Date:</label><br>
@@ -19,12 +19,27 @@
             {{end}}
         </fieldset>
 
+        <h4> Total for the past week:</h4>
+        <fieldset>
+            {{range .WeeklyTotals}}
+                <li>{{.Username}}: {{.Pullups}}</li>
+            {{end}}
+        </fieldset>
+
         <h4>Running Totals:</h4>
         <fieldset>
             {{range .Totals}}
                 <li>{{.Username}}: {{.Pullups}}</li>
             {{end}}
         </fieldset>
+
+        <h4>Winners ⚡ </h4>
+        <fieldset>
+            <li>Yesterdays winner: {{.WinnerDay}}</li>
+            <li>Past 7 day winner: {{.WinnerWeek}}</li>
+            <li>All time winner: {{.WinnerAllTime}}</li>
+        </fieldset>
+
 
         <h4>Switch Page:</h4>
         <a class="btn" href="/pullups">Log a Sesh!</a>
@@ -107,7 +122,7 @@
             console.log("test")
 
             var options = {
-                title: 'Cumulative',
+                title: 'Cumulative of last 7 days',
                 hAxis: {
                     title: 'Date'
                 },

@@ -20,7 +20,11 @@ type Total struct {
 type ViewPage struct {
 	Totals      []Total
 	DailyTotals []Total
+	WeeklyTotals []Total
 	Day         string
+	WinnerDay		string
+	WinnerWeek		string
+	WinnerAllTime	string
 
 	Graph1Points []DayData
 	Graph2Points []DayData
