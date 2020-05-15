@@ -138,15 +138,15 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pageData := ViewPage{
-		Totals:       totals,
-		DailyTotals:  totalsPerDay,
-		WeeklyTotals: weeklyTotals,
-		Day:          date.Format("2006-01-02"),
-		WinnerDay:	users[winnerDay].username,
-		WinnerWeek: users[winnerWeek].username,
+		Totals:        totals,
+		DailyTotals:   totalsPerDay,
+		WeeklyTotals:  weeklyTotals,
+		Day:           date.Format("2006-01-02"),
+		WinnerDay:     users[winnerDay].username,
+		WinnerWeek:    users[winnerWeek].username,
 		WinnerAllTime: users[winnerAllTime].username,
-		Graph1Points: graphData,
-		Graph2Points: totalsCumulative,
+		Graph1Points:  graphData,
+		Graph2Points:  totalsCumulative,
 	}
 
 	if r.Method == "POST" {
@@ -167,14 +167,15 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 		}
 
 		pageData = ViewPage{
-			Totals:       totals,
-			DailyTotals:  totalsPerDay,
-			Day:          date.Format("2006-01-02"),
-			WinnerDay:	users[winnerDay].username,
-			WinnerWeek: users[winnerWeek].username,
+			Totals:        totals,
+			DailyTotals:   totalsPerDay,
+			WeeklyTotals:  weeklyTotals,
+			Day:           date.Format("2006-01-02"),
+			WinnerDay:     users[winnerDay].username,
+			WinnerWeek:    users[winnerWeek].username,
 			WinnerAllTime: users[winnerAllTime].username,
-			Graph1Points: graphData,
-			Graph2Points: totalsCumulative,
+			Graph1Points:  graphData,
+			Graph2Points:  totalsCumulative,
 		}
 	}
 
@@ -345,11 +346,10 @@ func getWeeklyTotals(ur []user) ([]Total, int, error) {
 		return nil, -1, err
 	}
 
-
 	for i, u := range ur {
-		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where  (user_id = ? && day <= ?) `, u.id, from)
+		row, err := db.Query(`select COALESCE(sum(pullups), 0) from pullups where  (user_id = ? && day >= ?) `, u.id, from)
 		if err != nil {
-			return nil, -1,  err
+			return nil, -1, err
 		}
 		defer row.Close()
 
