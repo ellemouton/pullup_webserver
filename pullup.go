@@ -137,14 +137,18 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	winUserDay := getWinnerUser(users, winnerDay)
+	winUserWeek := getWinnerUser(users, winnerWeek)
+	winUserAll := getWinnerUser(users, winnerAllTime)
+
 	pageData := ViewPage{
 		Totals:        totals,
 		DailyTotals:   totalsPerDay,
 		WeeklyTotals:  weeklyTotals,
 		Day:           date.Format("2006-01-02"),
-		WinnerDay:     users[winnerDay].username,
-		WinnerWeek:    users[winnerWeek].username,
-		WinnerAllTime: users[winnerAllTime].username,
+		WinnerDay:     winUserDay,
+		WinnerWeek:    winUserWeek,
+		WinnerAllTime: winUserAll,
 		Graph1Points:  graphData,
 		Graph2Points:  totalsCumulative,
 	}
@@ -171,9 +175,9 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 			DailyTotals:   totalsPerDay,
 			WeeklyTotals:  weeklyTotals,
 			Day:           date.Format("2006-01-02"),
-			WinnerDay:     users[winnerDay].username,
-			WinnerWeek:    users[winnerWeek].username,
-			WinnerAllTime: users[winnerAllTime].username,
+			WinnerDay:     winUserDay,
+			WinnerWeek:    winUserWeek,
+			WinnerAllTime: winUserAll,
 			Graph1Points:  graphData,
 			Graph2Points:  totalsCumulative,
 		}
@@ -188,6 +192,18 @@ func viewStats(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
+}
+
+func getWinnerUser(us []user, winner int) string {
+	u := "none"
+
+	if winner > -1 {
+		u = us[winner].username
+	} else if winner == -2 {
+		u = "tie"
+	}
+
+	return u
 }
 
 func getAllUsers() ([]user, error) {
@@ -328,6 +344,8 @@ func getTotals(ur []user) ([]Total, int, error) {
 		if totPullups > max {
 			max = totPullups
 			winner = i
+		} else if totPullups == max {
+			winner = -2
 		}
 
 		totals = append(totals, Total{Username: u.username, Pullups: totPullups})
@@ -364,6 +382,8 @@ func getWeeklyTotals(ur []user) ([]Total, int, error) {
 		if totPullups > max {
 			max = totPullups
 			winner = i
+		} else if totPullups == max {
+			winner = -2
 		}
 
 		totals = append(totals, Total{Username: u.username, Pullups: totPullups})
@@ -394,6 +414,8 @@ func getTotalsPerDay(ur []user, d time.Time) ([]Total, int, error) {
 		if totPullups > max {
 			max = totPullups
 			winner = i
+		} else if totPullups == max {
+			winner = -2
 		}
 
 		totals = append(totals, Total{Username: u.username, Pullups: totPullups})
