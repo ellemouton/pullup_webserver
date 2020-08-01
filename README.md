@@ -4,7 +4,7 @@ Basic golang pullup tracking webserver
 This is a basic golang webserver that I built in order to get the hang of go webservers and basic mysql usage.
 It also allows my climbing friends and I to compete with one another during the COVID19 lockdown :muscle:
 
-The server is up and running and can be found at: http://52.16.76.131/pullups
+The server is up and running and can be found at: http://ellemouton.com
 
 ## Step 1
 
